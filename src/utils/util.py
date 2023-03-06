@@ -18,7 +18,47 @@ def non_maximum_suppression(boxes, scores, threshold=0.5):
     # TODO: Please fill the codes below to calculate the iou of the two boxes
     # Hint: You can refer to the nms part implemented in loss.py but the input shapes are different here
     ##################################################################
-    pass
+    keep = scores.new(scores.size(0)).zero_().long()
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+
+    area = (x2 - x1) * (y2 - y1)  # 面积,shape[M]
+    _, idx = scores.sort(0, descending=True)  # 降序排列scores的值大小
+
+    count = 0
+
+    while idx.numel():
+        # 记录最大score值的index
+        i = idx[0]
+        # 保存到keep中
+        keep[count] = i
+        # keep 的序号
+        count += 1
+
+        if idx.size(0) == 1:  # 保留框只剩一个
+            break
+
+        idx = idx[1:]  # 移除已经保存的index
+
+        # 计算boxes[i]和其他boxes之间的iou
+        xx1 = x1[idx].clamp(min=x1[i])
+        yy1 = y1[idx].clamp(min=y1[i])
+        xx2 = x2[idx].clamp(max=x2[i])
+        yy2 = y2[idx].clamp(max=y2[i])
+
+        w = (xx2 - xx1).clamp(min=0)
+        h = (yy2 - yy1).clamp(min=0)
+
+        # 交集的面积
+        inter = w * h  # shape[M-1]
+        iou = inter / (area[i] + area[idx] - inter)
+
+        # iou满足条件的idx
+        idx = idx[iou.le(threshold)]  # Shape[M-1]
+
+    return keep
 
     ##################################################################
 
@@ -85,10 +125,10 @@ def inference(args, model, img_path):
     ###################################################################
     # TODO: Please fill the codes here to do the image normalization
     ##################################################################
-    pass
+
     ##################################################################
 
-    transform = transforms.Compose([transforms.ToTensor(), ])
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean, std), ])
     img = transform(img).unsqueeze(0)
     img = img.cuda()
 

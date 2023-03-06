@@ -1,4 +1,6 @@
 from collections import defaultdict
+
+import numpy as np
 from tqdm import tqdm
 import argparse
 import os
@@ -92,8 +94,12 @@ class Evaluation:
             ###################################################################
             # TODO: Please fill the codes to compute recall and precision
             ##################################################################
-            recall = 0.
-            precision = 0.
+            fp = np.cumsum(fp)
+            tp = np.cumsum(tp)
+            # recall = 0.
+            # precision = 0.
+            recall = tp / float(npos)
+            precision = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
 
             ##################################################################
             ap = self.compute_ap(recall, precision)

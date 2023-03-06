@@ -81,9 +81,10 @@ class yololoss(nn.Module):
             # TODO: Please fill the codes below to calculate the iou of the two boxes and substite the "?"
             # Note: return variable: iou_res (self.B, 1)
             ##################################################################
-            pass
+            box2_xyxy[:, :2] = box2[:, :2] / self.S - 0.5 * box2[:, 2:4]
+            box2_xyxy[:, 2:4] = box2[:, :2] / self.S + 0.5 * box2[:, 2:4]
 
-            iou_res = self.compute_iou("?", "?")
+            iou_res = self.compute_iou(box1_xyxy[:, :4], box2_xyxy[:, :4])
             ##################################################################
             max_iou, max_index = iou_res.max(0)
             max_index = max_index.data.cuda()
@@ -107,9 +108,8 @@ class yololoss(nn.Module):
         ###################################################################
         # TODO: Please fill the codes below to calculate the location loss
         ##################################################################
-        pass
-        
-        loc_loss = 0
+        loc_loss = F.mse_loss(box_pred_response[:, :2], box_target_response[:, :2], size_average=False) + F.mse_loss(
+            torch.sqrt(box_pred_response[:, 2:4]), torch.sqrt(box_target_response[:, 2:4]), size_average=False)
 
         ##################################################################
         
@@ -121,9 +121,10 @@ class yololoss(nn.Module):
         ###################################################################
         # TODO: Please fill the codes below to calculate the Not Response Loss
         ##################################################################
-        pass
-
-        not_response_loss = 0
+        box_pred_not_response = box_pred[coo_not_response_mask].view(-1, 5)
+        box_target_not_response = box_target[coo_not_response_mask].view(-1, 5)
+        # box_target_not_response[:, 4] = 0
+        not_response_loss = F.mse_loss(box_pred_not_response[:, 4], box_target_not_response[:, 4], size_average=False)
 
         ##################################################################
         
